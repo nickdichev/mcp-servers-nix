@@ -24,12 +24,14 @@ in
 
         flavorNames = [
           "claude-code"
+          "codex"
           "opencode"
           "vscode-workspace"
         ];
 
         flavorFormatMap = {
           claude-code = "json";
+          codex = "toml-inline";
           opencode = "json";
           vscode-workspace = "json";
         };
@@ -89,6 +91,7 @@ in
             fileName =
               {
                 claude-code = ".mcp.json";
+                codex = ".mcp.codex.toml";
                 opencode = "opencode.json";
                 vscode-workspace = ".vscode/mcp.json";
               }
