@@ -212,9 +212,18 @@ rec {
       serverConfigFiles = lib.mapAttrs' (
         name: server:
         lib.nameValuePair "mcp-server-${name}" (
-          tomlInlineFormat.generate "codex-mcp-server-${name}.toml" {
-            mcp_servers.${name} = server;
-          }
+          pkgs.runCommand "codex-mcp-server-${name}.toml"
+            {
+              inlineConfig = tomlInlineFormat.generate "codex-mcp-server-${name}-inline.toml" {
+                value = server;
+              };
+              passAsFile = [ "key" ];
+              key = "mcp_servers.${builtins.toJSON name}";
+              nativeBuildInputs = [ pkgs.gnused ];
+            }
+            ''
+              sed "s/^value = /$(cat "$keyPath") = /" "$inlineConfig" > "$out"
+            ''
         )
       ) codexServers;
       extraConfigFiles = lib.optionalAttrs (extraConfig != { }) {

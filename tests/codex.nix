@@ -59,10 +59,10 @@ in
       '';
 
   test-codex-config-args = pkgs.runCommand "test-codex-config-args" { } ''
-    grep -F 'mcp_servers = {custom = {args = ["custom"], command = "echo"}}' ${
+    grep -F 'mcp_servers."custom" = {args = ["custom"], command = "echo"}' ${
       codexConfigArgFiles."mcp-server-custom"
     }
-    grep -F 'mcp_servers = {other = {args = ["other"], command = "echo", env = {TEST_VAR = "test_value"}}}' ${
+    grep -F 'mcp_servers."other" = {args = ["other"], command = "echo", env = {TEST_VAR = "test_value"}}' ${
       codexConfigArgFiles."mcp-server-other"
     }
     grep -F 'mcp_oauth_callback_port = 5555' ${codexConfigArgFiles.extra}
