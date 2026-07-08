@@ -218,7 +218,7 @@ rec {
                 value = server;
               };
               passAsFile = [ "key" ];
-              key = "mcp_servers.${builtins.toJSON name}";
+              key = "mcp_servers.${name}";
               nativeBuildInputs = [ pkgs.gnused ];
             }
             ''
