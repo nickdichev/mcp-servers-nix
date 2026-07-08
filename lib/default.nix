@@ -198,7 +198,43 @@ let
       };
     };
 in
-{
+rec {
   inherit evalModule;
   mkConfig = pkgs: config: (evalModule pkgs config).config.configFile;
+
+  mkCodexConfigArgFilesFromSettings =
+    pkgs: settings:
+    let
+      inherit (pkgs) lib;
+      tomlInlineFormat = (import ./formats.nix { inherit pkgs lib; })."toml-inline" { };
+      codexServers = settings.servers or { };
+      extraConfig = lib.removeAttrs settings [ "servers" ];
+      serverConfigFiles = lib.mapAttrs' (
+        name: server:
+        lib.nameValuePair "mcp-server-${name}" (
+          tomlInlineFormat.generate "codex-mcp-server-${name}.toml" {
+            mcp_servers.${name} = server;
+          }
+        )
+      ) codexServers;
+      extraConfigFiles = lib.optionalAttrs (extraConfig != { }) {
+        extra = tomlInlineFormat.generate "codex-extra-config.toml" extraConfig;
+      };
+    in
+    serverConfigFiles // extraConfigFiles;
+
+  mkCodexConfigArgFiles =
+    pkgs: config:
+    let
+      evaluated = evalModule pkgs (config // { flavor = "codex"; });
+    in
+    mkCodexConfigArgFilesFromSettings pkgs evaluated.config.settings;
+
+  mkCodexConfigArgs =
+    pkgs: config:
+    pkgs.lib.mapAttrsToList (_: configFile: "-c '$(cat ${configFile})'") (
+      mkCodexConfigArgFiles pkgs config
+    );
+
+  mkCodexConfigFlags = pkgs: config: pkgs.lib.concatStringsSep " " (mkCodexConfigArgs pkgs config);
 }

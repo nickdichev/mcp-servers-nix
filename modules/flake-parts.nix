@@ -108,6 +108,19 @@ in
             }
           ''
         ) enabledFlavors;
+
+        codexConfigArgFiles =
+          if lib.elem "codex" enabledFlavors then
+            let
+              evaluated = mkFlavorOutput "codex";
+            in
+            mcp-lib.mkCodexConfigArgFilesFromSettings pkgs evaluated.config.settings
+          else
+            { };
+
+        codexConfigArgs = lib.mapAttrsToList (
+          _: configFile: "-c '$(cat ${configFile})'"
+        ) codexConfigArgFiles;
       in
       {
         options = {
@@ -228,6 +241,36 @@ in
               '';
             };
 
+            codexConfigArgFiles = mkOption {
+              type = types.attrsOf types.package;
+              readOnly = true;
+              description = ''
+                Generated per-server Codex configuration snippets suitable for
+                use with `codex -c`. This preserves the full Codex config file
+                output while letting wrappers apply project MCP servers as
+                merge-friendly per-server overrides.
+              '';
+            };
+
+            codexConfigArgs = mkOption {
+              type = types.listOf types.str;
+              readOnly = true;
+              description = ''
+                List of Codex CLI arguments that apply the generated MCP
+                configuration snippets with one `-c` override per server.
+              '';
+            };
+
+            codexConfigFlags = mkOption {
+              type = types.str;
+              readOnly = true;
+              description = ''
+                Space-joined `codexConfigArgs`, intended for wrappers that need
+                to pass all generated Codex MCP configuration flags as one
+                string.
+              '';
+            };
+
             packages = mkOption {
               type = types.listOf types.package;
               readOnly = true;
@@ -257,6 +300,13 @@ in
         config = {
           mcp-servers = {
             configs = lib.genAttrs enabledFlavors (flavor: (mkFlavorOutput flavor).config.configFile);
+
+            inherit
+              codexConfigArgFiles
+              codexConfigArgs
+              ;
+
+            codexConfigFlags = lib.concatStringsSep " " codexConfigArgs;
 
             packages = enabledPackages;
 
